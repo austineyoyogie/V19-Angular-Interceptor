@@ -1,0 +1,248 @@
+package resource
+
+import (
+	"fmt"
+	"github.com/go-playground/validator/v10"
+	"golnfresherservers/api/middleware"
+	"golnfresherservers/api/models"
+	"golnfresherservers/api/service"
+	"golnfresherservers/api/utils"
+	"net/http"
+	"strconv"
+	"time"
+)
+
+type UserResource struct {
+	UserService service.UserService
+}
+
+func UserController(userService service.UserService) *UserResource {
+	return &UserResource{
+		UserService: userService,
+	}
+}
+func (app *UserResource) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var payload models.User
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+	}
+	// validate payload
+	if err := utils.Validate.Struct(&payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("error", errors))
+		return
+	}
+	// validate regex
+	_, err := utils.RegexValidate(payload.FirstName)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Field payload %s", err))
+		return
+	}
+	// validate regex
+	_, err = utils.RegexValidate(payload.LastName)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Field payload payload %s", err))
+		return
+	}
+	// check if user email exist
+	user, _ := app.UserService.Exists(payload.Email)
+	if payload.Email == user.Email {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("User with that email %s already exists", payload.Email))
+		return
+	}
+	// save user payload
+	save, err := app.UserService.Save(&payload)
+	if err != nil {
+		utils.WriteError(w, http.StatusUnprocessableEntity, fmt.Errorf("Unvalid payload &v", err))
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]any{
+		"data": save,
+	})
+}
+func (app *UserResource) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var payload models.Login
+	var bodyPayload models.User
+	//var codePayload models.TwoFactor
+	codePayload := &models.TwoFactor{}
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+	}
+	// validate payload
+	if err := utils.Validate.Struct(&payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("error", errors))
+		return
+	}
+	// check if user email exist
+	user, _ := app.UserService.Exists(payload.Email)
+	if user.Email == bodyPayload.Email {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Invalid username/password"))
+		return
+	}
+	// check if user is enabled
+	enabled, _ := app.UserService.IsEnabled(payload.Email)
+	if enabled.Enabled.Bool == false {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("User not enabled"))
+		return
+	}
+	// check hash password
+	password := bodyPayload.Password
+	hashPwd := user.Password
+	compare := utils.ComparePassword(password, hashPwd)
+	token, _ := middleware.GenerateAccessToken(user)
+	refresh, _ := middleware.GenerateRefreshToken(user)
+
+	if compare {
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   "",
+			Expires: time.Now().Add(24 * time.Hour),
+		})
+	}
+
+	// send two-factor authentication code
+	// Home work: Please if that user_id exist in TwoFactor table, if exist delete before insert now code
+
+	//codePayload.UserId = user.ID
+	//err := app.UserService.DeleteVerificationCode(codePayload)
+	//if err != nil {
+	//	utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("internel server error"))
+	//	return
+	//}
+
+	codePayload.UserId = user.ID
+	code, err := app.UserService.SendVerificationCode(codePayload)
+	if err != nil {
+		utils.WriteError(w, http.StatusUnprocessableEntity, fmt.Errorf("Unvalid code payload &v", err))
+		return
+	}
+	tokens := map[string]any{
+		"access_token":  token,
+		"refresh_token": refresh,
+		"isUsingMfa":    code,
+	}
+	utils.WriteJSONW(w, http.StatusOK, map[string]any{
+		"data": user,
+		"auth": tokens,
+	})
+}
+
+func (app *UserResource) FindUserIdHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	params := r.PathValue("id")
+	userId, err := strconv.ParseUint(params, 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("that role id not avaliable"))
+		return
+	}
+	user, err := app.UserService.Find(userId)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("internel server error"))
+		return
+	}
+
+	utils.WriteJSONW(w, http.StatusOK, map[string]any{
+		"data": user,
+	})
+}
+func (app *UserResource) FindAllUsersHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	user, err := app.UserService.FindAll()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("internel server error"))
+		return
+	}
+	utils.WriteJSONW(w, http.StatusOK, map[string]any{
+		"data": user,
+	})
+}
+func (app *UserResource) UpdateUserIdHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	params := r.PathValue("id")
+	userId, err := strconv.ParseUint(params, 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("that role id not avaliable"))
+		return
+	}
+	//var payload models.Role
+	userPayload := &models.User{}
+	if err := utils.ParseJSON(r, &userPayload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+	}
+	// validate regex
+	_, err = utils.RegexValidate(userPayload.LastName)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Field payload %s", err))
+		return
+	}
+	// set Role.Id = request = roleId
+	userPayload.ID = userId
+	err = app.UserService.Update(userPayload)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("internel server error"))
+		return
+	}
+	utils.WriteJSONW(w, http.StatusOK, map[string]any{
+		"success": "Update user successfully.",
+	})
+}
+func (app *UserResource) DeleteUserIdHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	params := r.PathValue("id")
+	userId, err := strconv.ParseUint(params, 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("that role id not avaliable"))
+		return
+	}
+	err = app.UserService.Delete(userId)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("that role id not avaliable"))
+		return
+	}
+	utils.WriteJSONW(w, http.StatusOK, map[string]any{
+		"success": "Delete user successfully.",
+	})
+}
+
+func (app *UserResource) RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var user models.User
+	if err := utils.ParseJSON(r, &user); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+	}
+	token, _ := middleware.GenerateAccessToken(&user)
+	refresh, _ := middleware.GenerateRefreshToken(&user)
+
+	tokens := map[string]any{
+		"access_token":  token,
+		"refresh_token": refresh,
+	}
+	utils.WriteJSONW(w, http.StatusOK, map[string]any{
+		"auth": tokens,
+	})
+}

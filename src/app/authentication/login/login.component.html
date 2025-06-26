@@ -1,0 +1,55 @@
+<div id="loginPage">
+  <div class="container">
+     <div class="auth-layout__navigation">
+        <div class="auth-layout-header cs6xz-47tg82">
+          <a class="nav-left-items" href="/">Home</a>
+          <a class="nav-left-items ms-auto" href="/login">Login</a>
+          <div class="clear"></div>
+          <a class="nav-left-items" href="/register">Register</a>
+        </div>
+      </div>
+  </div>
+
+  <section *ngIf="(loginState$ | async) as state" [ngSwitch]="state.dataState">
+    <div *ngIf="!state.loginSuccess && !state.isUsingMfa" class="ghmsFv">
+    <div class="container">
+      <div *ngIf="state.dataState === DataState.ERROR" class="alert alert-danger bg-danger text-light border-0 alert-dismissible fade show" style="height: 60px; border-radius: 0;" role="alert">
+        {{ state.error }}
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      <form #loginForm="ngForm" (ngSubmit)="login(loginForm)">
+        <div class="mb-3">
+          <label for="email" class="form-label">Example label</label>
+          <div class="col-sm-10">
+            <input [disabled]="state.dataState === DataState.LOADING" type="email" ngModel id="email" name="email" class="form-control form-control-lg" placeholder="col-form-label-lg" required>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="password" class="form-label">Another label</label>
+          <div class="col-sm-10">
+            <input [disabled]="state.dataState === DataState.LOADING" type="password" ngModel id="password" name="password" class="form-control form-control-lg" placeholder="col-form-label-lg" required>
+          </div>
+        </div>
+
+        <div class="mb-3 col-12">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="gridCheck">
+            <label class="form-check-label" for="gridCheck">
+              Check me out
+            </label>
+          </div>
+        </div>
+        <div class="col-12 ">
+          <button type="submit" class="btn btn-primary">Sign in</button>
+        </div>
+      </form>
+    </div>
+    </div>
+  </section>
+</div>
+
+
+<!--        <div class="responsive-two-columns">-->
+<!--          <div>Main Left Here comes the main catch with floats: they need to be “cleared”. If you have floating elements in your container, they will fall out of it and the container would collapse to zero height.</div>-->
+<!--          <div>Right Left Here comes the main catch with floats: they need to be “cleared”. If you have floating elements in your container, they will fall out of it and the container would collapse to zero height.</div>-->
+<!--        </div>-->

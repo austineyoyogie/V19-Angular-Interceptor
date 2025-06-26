@@ -1,0 +1,46 @@
+<!--<div *ngIf="currentMessage" [ngClass]="{'alert-success': currentMessage.type === 'success' ? true : 'error'}">-->
+<!--  {{ currentMessage.text }}-->
+<!--</div>-->
+<!--<div *ngIf="showSuccessMessage" class="alert alert-success">-->
+<!--  Success! Your action was completed.-->
+<!--</div>-->
+
+<table class="table table-hover">
+  <thead class="table-borderless">
+  <tr class="text-center">
+    <th>Photo</th>
+    <th>User ID</th>
+    <th>First Name</th>
+    <th>Last Name</th>
+    <th>Email</th>
+    <th>Phone</th>
+    <th>Status</th>
+    <th>Role</th>
+    <th>Actions</th>
+  </tr>
+  </thead>
+  <tbody *ngFor="let appUser of users">
+  <tr class="text-center">
+    <td (click)="onSelectUser(appUser)">
+    </td>
+    <td (click)="onSelectUser(appUser)">{{appUser?.id}}</td>
+    <td (click)="onSelectUser(appUser)">{{appUser?.first_name}}</td>
+    <td (click)="onSelectUser(appUser)">{{appUser?.last_name}}</td>
+    <td (click)="onSelectUser(appUser)">{{appUser?.email}}</td>
+    <td (click)="onSelectUser(appUser)">{{appUser?.phone}}</td>
+
+    <td (click)="onSelectUser(appUser)">
+      <span [hidden]="!appUser?.enabled" class="badge badge-success" style="color: black;">Enabled</span>
+      <span [hidden]="appUser?.enabled" class="badge badge-danger" style="color: black;">Enabled</span>
+    </td>
+    <td (click)="onSelectUser(appUser)">{{appUser?.role[0]?.name}}</td>
+    <td class="">
+      <div class="btn-group">
+        <button class="btn btn-outline-info" (click)="onEditUser(appUser)"><i class="fas fa-edit"></i></button>
+        <button [hidden]="!isAdmin" class="btn btn-outline-danger" (click)="onDeleteUder(appUser?.username)"><i class="fas fa-trash"></i></button>
+      </div>
+    </td>
+  </tr>
+  </tbody>
+</table>
+

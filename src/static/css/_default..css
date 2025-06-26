@@ -1,0 +1,19 @@
+#site-header {
+  isolation: isolate;
+  position: sticky;
+  top: 0;
+  margin: 0 auto;
+  width: 100%;
+  z-index: 1000;
+}
+#site-header .header-navigation {
+  background: #212529;
+  color: #FFF;
+}
+#site-header .navigation-left-link, .navigation-right-link {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: 14px;
+}
+.navigation-left-link .link-home {
+  display: flex;
+}

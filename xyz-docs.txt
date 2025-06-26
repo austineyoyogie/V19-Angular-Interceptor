@@ -1,0 +1,16 @@
+
+Angular Frontend Series - Part 2 | Refresh Token | Interceptors -> Ng - 17
+https://www.youtube.com/watch?v=yWAUcVavka4&list=PLdSSipYLKxHrDr1V9YeXyv7-mjX41i5wn&index=1
+https://www.youtube.com/watch?v=qIcizQjdSoA&list=PLdSSipYLKxHrDr1V9YeXyv7-mjX41i5wn&index=2
+https://www.youtube.com/watch?v=qusSoae-OTs&list=PLdSSipYLKxHrDr1V9YeXyv7-mjX41i5wn&index=3
+https://github.com/SudarshanShahCode/movieApiUi
+
+=========================================================
+How to show success message after form submit in Angular?
+https://www.youtube.com/watch?v=ehDmArFFjtg
+
+  // https://www.npmjs.com/package/ngx-toastr
+  // https://www.youtube.com/watch?v=PvYplCUthZM
+  // https://www.youtube.com/watch?v=SZoRZX-tvVo
+  // https://www.youtube.com/watch?v=-vdolAsF3xE
+  // How to use toast in angular with example

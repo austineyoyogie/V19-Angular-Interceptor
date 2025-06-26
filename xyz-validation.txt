@@ -1,0 +1,119 @@
+https://developer.vonage.com/en/blog/using-jwt-for-authentication-in-a-golang-application-dr
+
+
+
+https://docs.vultr.com/how-to-create-a-central-input-data-validator-in-golang
+
+package main
+
+ import (
+     "strings"
+     "regexp"
+     "strconv"
+     "fmt"
+ )
+
+ func validate(params map[string]interface{}, validationRules map[string]string) (string) {
+
+     error := ""
+
+     for field, rules := range validationRules {
+
+         for _, rule := range strings.Split(rules, "|") {
+
+             fieldValue, ok := params[field]
+
+             if rule == "required" && ok == false {
+                 error = error + " " + field + " is required.\r\n";
+             }
+
+             if ok == true {
+
+                 if rule == "alphanumeric" {
+
+                     re := regexp.MustCompile("^[a-zA-Z0-9 ]*$")
+
+                     if re.MatchString(fmt.Sprint(fieldValue)) == false {
+                         error = error + "The value of '" +  field + "' is not a valid alphanumeric value.\r\n";
+                     }
+                 }
+
+                 if rule == "integer" {
+
+                     if _, err := strconv.ParseInt(fmt.Sprint(fieldValue), 10, 64); err != nil {
+                         error = error + "The value of '" + field + "' is not a valid integer value.\r\n";
+                     }
+
+                 }
+
+                 if rule == "float" {
+
+                     if _, err := strconv.ParseFloat(fmt.Sprint(fieldValue), 10); err != nil {
+                         error = error + "The value of '" + field + "' is not a valid float value.\r\n";
+                     }
+
+                 }
+
+             }
+
+         }
+
+     }
+
+     return error
+ }
+
+ =========================================
+
+ //A sample of data coming from web forms or API calls
+  params := map[string]interface{}{
+      "age" : 78,
+      "customer_name": "JOHN DOE",
+  }
+
+  //A sample of validation rules
+  validationRules := map[string]string{
+      "age" : "required|integer",
+      "customer_name": "required|alphanumeric",
+  }
+
+ =========================================
+
+ package main
+
+  import (
+      "net/http"
+      "fmt"
+  )
+
+  func main() {
+      http.HandleFunc("/", httpRequestHandler)
+      http.ListenAndServe(":8082", nil)
+  }
+
+  func httpRequestHandler(w http.ResponseWriter, req *http.Request) {
+
+      req.ParseForm()
+
+      params := map[string]interface{}{}
+
+      for field, value := range req.Form {
+          params[field] = value[0]
+      }
+
+      validationRules := map[string]string{
+          "first_name": "required|alphanumeric",
+          "last_name":  "required|alphanumeric",
+          "age" :       "required|integer",
+          "amount" :    "required|float",
+      }
+
+      error := validate(params, validationRules)
+
+      if error != "" {
+          fmt.Fprintf(w, error)
+      } else {
+          fmt.Fprintf(w, "Validation logic passed. Do your business logic...\r\n")
+      }
+
+  }
